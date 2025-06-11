@@ -5,8 +5,18 @@ services:
   jesse:
     image: salehmir/jesse:latest
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      bash -c "
+        until (echo > /dev/tcp/postgres/5432) >/dev/null 2>&1; do
+          echo waiting for postgres;
+          sleep 2;
+        done;
+        jesse install-live --no-strict && jesse run
+      "
     tty: true
     env_file:
       - ../.env
@@ -17,7 +27,6 @@ services:
     volumes:
       - ../:/home
     container_name: jesse
-    command: bash -c "jesse install-live --no-strict && jesse run"
 
   ### PostgreSQL ################################################
   postgres:
@@ -30,6 +39,11 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     container_name: postgres
+    healthcheck:
+       test: ["CMD-SHELL", "pg_isready -U jesse_user"]
+       interval: 5s
+       timeout: 5s
+       retries: 5
 
   ### Redis ################################################
   redis:

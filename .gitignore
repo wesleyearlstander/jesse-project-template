@@ -34,3 +34,6 @@ config.py
 live-config.py
 routes.py
 .env
+postgres-data/
+storage/logs/
+storage/temp/
